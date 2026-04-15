@@ -4,7 +4,7 @@ import { Stage, Layer, Circle, Text, Rect, Group, Image as KonvaImage } from "re
 import usePresenceStore from "@/store/presenceStore";
 import { ZoomIn, Maximize } from "lucide-react";
 
-export default function OfficeCanvas({ userId, userName, layout }) {
+const OfficeCanvas = React.forwardRef(({ userId, userName, layout }, ref) => {
   const { users, move } = usePresenceStore();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [myPos, setMyPos] = useState({ x: 500, y: 400 }); 
@@ -12,6 +12,24 @@ export default function OfficeCanvas({ userId, userName, layout }) {
   const [backgroundImage, setBackgroundImage] = useState(null);
   const containerRef = useRef(null);
   const posRef = useRef({ x: 500, y: 400 });
+
+  React.useImperativeHandle(ref, () => ({
+    teleportTo: (x, y) => {
+      // Basic wall collision check before teleporting
+      const walls = layout?.walls || [];
+      const collides = walls.some(wall => (
+        x >= wall.x && x <= wall.x + wall.width &&
+        y >= wall.y && y <= wall.y + wall.height
+      ));
+      
+      if (!collides) {
+        const newPos = { x, y };
+        setMyPos(newPos);
+        posRef.current = newPos;
+        move(x, y);
+      }
+    }
+  }));
 
   useEffect(() => {
     const img = new window.Image();
@@ -206,4 +224,6 @@ export default function OfficeCanvas({ userId, userName, layout }) {
       )}
     </div>
   );
-}
+});
+
+export default OfficeCanvas;

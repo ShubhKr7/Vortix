@@ -1,10 +1,11 @@
 "use client";
+import React from "react";
 import useAuthStore from "@/store/authStore";
 import useWorkspaceStore from "@/store/workspaceStore";
 import OfficeCanvas from "./Canvas";
 import LiveKitManager from "../Audio/LiveKitManager";
 
-export default function VirtualOffice({ workspaceId, muted }) {
+const VirtualOffice = React.forwardRef(({ workspaceId, muted }, ref) => {
   const { user } = useAuthStore();
   const { currentWorkspace } = useWorkspaceStore();
 
@@ -13,11 +14,14 @@ export default function VirtualOffice({ workspaceId, muted }) {
   return (
     <>
       <OfficeCanvas 
+        ref={ref}
         userId={user.id} 
         userName={user.name} 
         layout={currentWorkspace.layout} 
       />
-      <LiveKitManager workspaceId={workspaceId} muted={muted} />
+      <LiveKitManager workspaceId={workspaceId} muted={muted} layout={currentWorkspace.layout} />
     </>
   );
-}
+});
+
+export default VirtualOffice;

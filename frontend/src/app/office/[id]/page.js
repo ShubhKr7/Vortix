@@ -1,22 +1,25 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import useAuthStore from "@/store/authStore";
 import useWorkspaceStore from "@/store/workspaceStore";
 import usePresenceStore from "@/store/presenceStore";
 import VirtualOffice from "@/components/Office/VirtualOffice";
-import { ArrowLeft, Users, Shield, Copy, Check, Loader2, Mic, MicOff } from "lucide-react";
+import MemberSearchModal from "@/components/Office/MemberSearchModal";
+import { ArrowLeft, Users, Shield, Copy, Check, Loader2, Mic, MicOff, Search } from "lucide-react";
 import api from "@/lib/api";
 
 export default function OfficePage() {
   const { id } = useParams();
   const router = useRouter();
+  const canvasRef = useRef(null);
   const { user, token, isAuthenticated } = useAuthStore();
   const { currentWorkspace, setCurrentWorkspace } = useWorkspaceStore();
   const { initSocket, joinWorkspace, disconnect, users } = usePresenceStore();
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -48,6 +51,15 @@ export default function OfficePage() {
     navigator.clipboard.writeText(currentWorkspace?.inviteCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleTeleport = (targetMember) => {
+    if (canvasRef.current) {
+      // Offset slightly so we don't land exactly on top
+      const targetX = targetMember.x + 60;
+      const targetY = targetMember.y;
+      canvasRef.current.teleportTo(targetX, targetY);
+    }
   };
 
   if (loading) return (
@@ -91,24 +103,33 @@ export default function OfficePage() {
              <span>{copied ? "COPIED" : `INVITE: ${currentWorkspace?.inviteCode}`}</span>
            </button>
            
-           <div className="flex -space-x-2">
-             {currentWorkspace?.members.slice(0, 3).map((m, i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold text-blue-400 ring-1 ring-white/10" title={m.name}>
-                  {m.name.charAt(0).toUpperCase()}
-                </div>
-             ))}
-             {currentWorkspace?.members.length > 3 && (
-                <div className="w-8 h-8 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                  +{currentWorkspace.members.length - 3}
-                </div>
-             )}
-           </div>
+           <div className="h-8 w-[1px] bg-slate-800 hidden md:block"></div>
+
+           {/* Members Avatars - Clickable to open search */}
+           <button 
+             onClick={() => setIsSearchOpen(true)}
+             className="flex items-center space-x-3 bg-slate-800/50 hover:bg-slate-800 p-1.5 px-3 rounded-full border border-white/5 transition-all active:scale-95 group"
+           >
+             <div className="flex -space-x-2">
+               {Object.values(users).slice(0, 3).map((m, i) => (
+                  <div key={i} className="w-7 h-7 rounded-full border-2 border-slate-900 bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shadow-lg" title={m.name}>
+                    {m.name.charAt(0).toUpperCase()}
+                  </div>
+               ))}
+               {Object.keys(users).length > 3 && (
+                  <div className="w-7 h-7 rounded-full border-2 border-slate-900 bg-slate-700 flex items-center justify-center text-[10px] font-bold text-slate-300">
+                    +{Object.keys(users).length - 3}
+                  </div>
+               )}
+             </div>
+             <Search size={14} className="text-slate-500 group-hover:text-blue-400 transition-colors" />
+           </button>
         </div>
       </header>
 
       {/* Main Area */}
       <main className="flex-1 relative bg-[radial-gradient(circle_at_center,_rgba(30,41,59,0.3)_0%,_transparent_70%)]">
-        <VirtualOffice workspaceId={id} muted={muted} />
+        <VirtualOffice ref={canvasRef} workspaceId={id} muted={muted} />
       </main>
       
       {/* Legend / Status */}
@@ -132,6 +153,14 @@ export default function OfficePage() {
               <p className="text-[10px] text-white leading-relaxed italic">Use arrow keys or click to move on the grid. Proximity audio connects automatically.</p>
           </div>
       </div>
+
+      <MemberSearchModal 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        users={users}
+        onTeleport={handleTeleport}
+        currentUserId={user?.id || user?._id}
+      />
     </div>
   );
 }
