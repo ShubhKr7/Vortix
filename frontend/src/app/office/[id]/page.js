@@ -13,7 +13,7 @@ export default function OfficePage() {
   const router = useRouter();
   const { user, token, isAuthenticated } = useAuthStore();
   const { currentWorkspace, setCurrentWorkspace } = useWorkspaceStore();
-  const { initSocket, joinWorkspace, disconnect } = usePresenceStore();
+  const { initSocket, joinWorkspace, disconnect, users } = usePresenceStore();
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -117,7 +117,7 @@ export default function OfficePage() {
           <div className="space-y-3">
               <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-500">Connected Users</span>
-                  <span className="text-blue-400 font-bold flex items-center"><Users size={12} className="mr-1" /> {currentWorkspace?.members.length}</span>
+                  <span className="text-blue-400 font-bold flex items-center"><Users size={12} className="mr-1" /> {Object.keys(users).length}</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-500">Network Latency</span>
@@ -129,7 +129,7 @@ export default function OfficePage() {
               </div>
           </div>
           <div className="mt-4 pt-3 border-t border-slate-800">
-              <p className="text-[10px] text-slate-600 leading-relaxed italic">Use arrow keys or click to move on the grid. Proximity audio connects automatically.</p>
+              <p className="text-[10px] text-white leading-relaxed italic">Use arrow keys or click to move on the grid. Proximity audio connects automatically.</p>
           </div>
       </div>
     </div>

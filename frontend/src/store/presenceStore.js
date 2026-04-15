@@ -8,7 +8,7 @@ const usePresenceStore = create((set, get) => ({
   initSocket: (token) => {
     if (get().socket) return;
     
-    const socket = io('http://localhost:5000', {
+    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000', {
       auth: { token }
     });
     

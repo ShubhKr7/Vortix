@@ -16,7 +16,11 @@ export default function LiveKitManager({ workspaceId, muted }) {
 
     const connectToRoom = async () => {
       try {
-        const { data } = await api.get(`/workspaces/${workspaceId}/token`);
+        const { data } = await api.get(`/workspaces/${workspaceId}/token`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         const liveKitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL || 'ws://localhost:7880';
         
         activeRoom = new Room({
@@ -80,7 +84,7 @@ export default function LiveKitManager({ workspaceId, muted }) {
       const myPos = users[user.id || user._id];
       if (!myPos) return;
 
-      room.participants.forEach((participant) => {
+      room.remoteParticipants.forEach((participant) => {
         const otherPos = users[participant.identity];
         if (!otherPos) return;
 
@@ -91,7 +95,7 @@ export default function LiveKitManager({ workspaceId, muted }) {
         const threshold = 200; // Proximity threshold
         
         // Find audio track publication
-        const audioPub = participant.getTrack(Track.Source.Microphone);
+        const audioPub = participant.getTrackPublication(Track.Source.Microphone);
         
         if (audioPub) {
             if (distance < threshold) {

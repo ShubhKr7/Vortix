@@ -120,9 +120,15 @@ export default function OfficeCanvas({ userId, userName, layout }) {
     const stage = e.target.getStage();
     const pointer = stage.getPointerPosition();
     if (pointer) {
-      const x = (pointer.x - offsetX) / scale;
-      const y = (pointer.y - offsetY) / scale;
+      let x = (pointer.x - offsetX) / scale;
+      let y = (pointer.y - offsetY) / scale;
       
+      // Clamp to boundaries
+      const maxX = backgroundImage?.width || 1000;
+      const maxY = backgroundImage?.height || 800;
+      x = Math.max(20, Math.min(x, maxX - 20));
+      y = Math.max(20, Math.min(y, maxY - 20));
+
       const newPos = { x, y };
       setMyPos(newPos);
       posRef.current = newPos;
