@@ -92,7 +92,7 @@ export default function LiveKitManager({ workspaceId, muted }) {
           Math.pow(myPos.x - otherPos.x, 2) + Math.pow(myPos.y - otherPos.y, 2)
         );
 
-        const threshold = 200; // Proximity threshold
+        const threshold = 310; // Proximity threshold
         
         // Find audio track publication
         const audioPub = participant.getTrackPublication(Track.Source.Microphone);
