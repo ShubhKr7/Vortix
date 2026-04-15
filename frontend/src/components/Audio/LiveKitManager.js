@@ -151,24 +151,26 @@ export default function LiveKitManager({ workspaceId, muted, cameraEnabled, layo
         );
 
         const threshold = 310; // Proximity threshold
+        const myRoomId = getRoomId(myPos.x, myPos.y);
+        const otherRoomId = getRoomId(otherPos.x, otherPos.y);
         
-        // Find audio track publication
+        // Find audio and video track publications
         const audioPub = participant.getTrackPublication(Track.Source.Microphone);
-        
-        if (audioPub) {
-            if (distance < threshold) {
-                if (!audioPub.isSubscribed) {
-                    audioPub.setSubscribed(true);
-                }
-                const element = audioRefs.current[participant.identity];
-                if (element) {
-                    element.volume = Math.max(0, 1 - (distance / threshold));
-                }
-            } else {
-                if (audioPub.isSubscribed) {
-                    audioPub.setSubscribed(false);
-                }
+        const videoPub = participant.getTrackPublication(Track.Source.Camera);
+
+        if (distance < threshold && myRoomId === otherRoomId) {
+            // Subscribe to both audio and video when nearby and in same room
+            if (audioPub && !audioPub.isSubscribed) audioPub.setSubscribed(true);
+            if (videoPub && !videoPub.isSubscribed) videoPub.setSubscribed(true);
+            
+            const element = audioRefs.current[participant.identity];
+            if (element) {
+                element.volume = Math.max(0, 1 - (distance / threshold));
             }
+        } else {
+            // Unsubscribe when far away OR in different rooms to save bandwidth/privacy
+            if (audioPub && audioPub.isSubscribed) audioPub.setSubscribed(false);
+            if (videoPub && videoPub.isSubscribed) videoPub.setSubscribed(false);
         }
       });
     }, 500);
