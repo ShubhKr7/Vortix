@@ -25,6 +25,21 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/workspaces', workspaceRoutes);
 
+// Keep-alive ping endpoint
+app.get('/api/ping', (req, res) => res.send('pong'));
+
+// Self-pinging logic to prevent sleep on free hosting
+const SELF_URL = process.env.SELF_URL;
+if (SELF_URL) {
+  setInterval(() => {
+    http.get(SELF_URL + '/api/ping', (res) => {
+      console.log(`Self-ping sent to ${SELF_URL}/api/ping - Status: ${res.statusCode}`);
+    }).on('error', (err) => {
+      console.error('Self-ping failed:', err.message);
+    });
+  }, 5 * 60 * 1000); // 5 minutes
+}
+
 // Socket.io integration
 setupSocket(io);
 
