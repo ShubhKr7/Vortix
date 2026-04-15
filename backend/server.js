@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { Server } = require('socket.io');
@@ -31,8 +32,9 @@ app.get('/api/ping', (req, res) => res.send('pong'));
 // Self-pinging logic to prevent sleep on free hosting
 const SELF_URL = process.env.SELF_URL;
 if (SELF_URL) {
+  const pinger = SELF_URL.startsWith('https') ? https : http;
   setInterval(() => {
-    http.get(SELF_URL + '/api/ping', (res) => {
+    pinger.get(SELF_URL + '/api/ping', (res) => {
       console.log(`Self-ping sent to ${SELF_URL}/api/ping - Status: ${res.statusCode}`);
     }).on('error', (err) => {
       console.error('Self-ping failed:', err.message);
