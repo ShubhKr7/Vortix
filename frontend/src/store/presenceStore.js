@@ -4,6 +4,13 @@ import { io } from 'socket.io-client';
 const usePresenceStore = create((set, get) => ({
   socket: null,
   users: {}, // { userId: { x, y, name } }
+  videos: {}, // { userId: HTMLVideoElement }
+  
+  setVideo: (userId, element) => {
+    set((state) => ({
+      videos: { ...state.videos, [userId]: element }
+    }));
+  },
   
   initSocket: (token) => {
     if (get().socket) return;

@@ -6,7 +6,7 @@ import useWorkspaceStore from "@/store/workspaceStore";
 import usePresenceStore from "@/store/presenceStore";
 import VirtualOffice from "@/components/Office/VirtualOffice";
 import MemberSearchModal from "@/components/Office/MemberSearchModal";
-import { ArrowLeft, Users, Shield, Copy, Check, Loader2, Mic, MicOff, Search } from "lucide-react";
+import { ArrowLeft, Users, Shield, Copy, Check, Loader2, Mic, MicOff, Search, Video, VideoOff } from "lucide-react";
 import api from "@/lib/api";
 
 export default function OfficePage() {
@@ -19,6 +19,7 @@ export default function OfficePage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [cameraEnabled, setCameraEnabled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
@@ -96,6 +97,14 @@ export default function OfficePage() {
              <span>{muted ? "MUTED" : "UNMUTED"}</span>
            </button>
 
+           <button 
+             onClick={() => setCameraEnabled(!cameraEnabled)} 
+             className={`flex items-center space-x-2 px-4 py-2 rounded-full font-semibold text-xs transition-all ring-1 ring-white/10 ${!cameraEnabled ? "bg-red-600/20 text-red-400 hover:bg-red-600/30 ring-red-500/30" : "bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30 ring-emerald-500/30"}`}
+           >
+             {!cameraEnabled ? <VideoOff size={14} /> : <Video size={14} />}
+             <span>{cameraEnabled ? "CAM ON" : "CAM OFF"}</span>
+           </button>
+
            <div className="h-8 w-[1px] bg-slate-800 hidden sm:block"></div>
 
            <button onClick={copyInvite} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-all text-xs font-semibold ring-1 ring-white/5 active:scale-95">
@@ -129,7 +138,12 @@ export default function OfficePage() {
 
       {/* Main Area */}
       <main className="flex-1 relative bg-[radial-gradient(circle_at_center,_rgba(30,41,59,0.3)_0%,_transparent_70%)]">
-        <VirtualOffice ref={canvasRef} workspaceId={id} muted={muted} />
+        <VirtualOffice 
+          ref={canvasRef} 
+          workspaceId={id} 
+          muted={muted} 
+          cameraEnabled={cameraEnabled} 
+        />
       </main>
       
       {/* Legend / Status */}

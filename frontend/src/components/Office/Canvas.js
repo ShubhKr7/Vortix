@@ -1,17 +1,27 @@
 "use client";
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import Konva from "konva";
 import { Stage, Layer, Circle, Text, Rect, Group, Image as KonvaImage } from "react-konva";
 import usePresenceStore from "@/store/presenceStore";
 import { ZoomIn, Maximize } from "lucide-react";
 
 const OfficeCanvas = React.forwardRef(({ userId, userName, layout }, ref) => {
-  const { users, move } = usePresenceStore();
+  const { users, move, videos } = usePresenceStore();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [myPos, setMyPos] = useState({ x: 500, y: 400 }); 
   const [viewMode, setViewMode] = useState("follow"); // "follow" or "full"
   const [backgroundImage, setBackgroundImage] = useState(null);
   const containerRef = useRef(null);
   const posRef = useRef({ x: 500, y: 400 });
+
+  // Video Animation Loop for real-time frames
+  const layerRef = useRef(null);
+  useEffect(() => {
+    if (!layerRef.current) return;
+    const anim = new Konva.Animation(() => {}, layerRef.current);
+    anim.start();
+    return () => anim.stop();
+  }, [backgroundImage]);
 
   React.useImperativeHandle(ref, () => ({
     teleportTo: (x, y) => {
@@ -171,7 +181,7 @@ const OfficeCanvas = React.forwardRef(({ userId, userName, layout }, ref) => {
 
       {dimensions.width > 0 && dimensions.height > 0 && (
       <Stage width={dimensions.width} height={dimensions.height} onClick={handleCanvasClick}>
-        <Layer>
+        <Layer ref={layerRef}>
           <Group x={offsetX} y={offsetY} scaleX={scale} scaleY={scale}>
             {backgroundImage && (
               <KonvaImage
@@ -189,7 +199,9 @@ const OfficeCanvas = React.forwardRef(({ userId, userName, layout }, ref) => {
                 {id === userId && (
                   <Circle radius={30} stroke="#3b82f6" strokeWidth={2} dash={[5, 5]} opacity={0.5} />
                 )}
-                <Group>
+                <Group clipFunc={(ctx) => {
+                    ctx.arc(0, 0, 24, 0, Math.PI * 2, false);
+                  }}>
                     <Circle
                         radius={24}
                         fillRadialGradientStartRadius={0}
@@ -201,16 +213,44 @@ const OfficeCanvas = React.forwardRef(({ userId, userName, layout }, ref) => {
                         stroke="#fff"
                         strokeWidth={2}
                     />
-                    <Text
-                        text={user.name ? user.name.charAt(0).toUpperCase() : "?"}
-                        fontSize={18}
-                        fontStyle="bold"
-                        fill="#fff"
-                        align="center"
-                        width={48}
-                        offsetX={24}
-                        y={-9}
-                    />
+                    {/* Live Video Frame */}
+                    {videos[id] && (
+                        <>
+                          {(() => {
+                            if (videos[id].videoWidth === 0) {
+                                console.log(`⏳ Video exists for ${id} but width is 0 - metadata not loaded?`);
+                            }
+                            return null;
+                          })()}
+                          {videos[id].videoWidth > 0 && (
+                            <KonvaImage
+                              image={videos[id]}
+                              x={-24}
+                              y={-24}
+                              width={48}
+                              height={48}
+                              crop={{
+                                x: (videos[id].videoWidth - Math.min(videos[id].videoWidth, videos[id].videoHeight)) / 2,
+                                y: (videos[id].videoHeight - Math.min(videos[id].videoWidth, videos[id].videoHeight)) / 2,
+                                width: Math.min(videos[id].videoWidth, videos[id].videoHeight),
+                                height: Math.min(videos[id].videoWidth, videos[id].videoHeight)
+                              }}
+                            />
+                          )}
+                        </>
+                    )}
+                    {!videos[id] && (
+                        <Text
+                            text={user.name ? user.name.charAt(0).toUpperCase() : "?"}
+                            fontSize={18}
+                            fontStyle="bold"
+                            fill="#fff"
+                            align="center"
+                            width={48}
+                            offsetX={24}
+                            y={-9}
+                        />
+                    )}
                 </Group>
                 <Group y={32}>
                     <Rect x={-50} width={100} height={20} fill="rgba(15, 23, 42, 0.9)" cornerRadius={4} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />

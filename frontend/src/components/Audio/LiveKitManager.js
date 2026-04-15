@@ -5,11 +5,46 @@ import useAuthStore from "@/store/authStore";
 import usePresenceStore from "@/store/presenceStore";
 import api from "@/lib/api";
 
-export default function LiveKitManager({ workspaceId, muted }) {
+export default function LiveKitManager({ workspaceId, muted, cameraEnabled, layout }) {
   const { user, token } = useAuthStore();
-  const { users } = usePresenceStore();
+  const { users, setVideo } = usePresenceStore();
   const [room, setRoom] = useState(null);
   const audioRefs = useRef({});
+
+  useEffect(() => {
+    if (room && room.localParticipant) {
+        if (cameraEnabled) {
+            console.log("📸 Attempting to enable camera...");
+            room.localParticipant.setCameraEnabled(true).then(() => {
+                // Wait for the track to be published and available
+                setTimeout(() => {
+                    const publications = Array.from(room.localParticipant.videoTrackPublications.values());
+                    const videoPub = publications.find(p => p.videoTrack);
+                    
+                    if (videoPub && videoPub.videoTrack) {
+                        console.log("✅ Local video track found, attaching...");
+                        const el = videoPub.videoTrack.attach();
+                        el.style.display = 'none';
+                        el.muted = true;
+                        el.play().then(() => {
+                            console.log(`🎥 Video playing! Size: ${el.videoWidth}x${el.videoHeight}`);
+                            setVideo(user.id || user._id, el);
+                        }).catch(e => console.error("❌ Video play failed:", e));
+                        document.body.appendChild(el);
+                    } else {
+                        console.warn("⚠️ Camera enabled but no video track found in publications.");
+                    }
+                }, 1000);
+            }).catch(err => {
+                console.error("❌ setCameraEnabled failed:", err);
+            });
+        } else {
+            console.log("📸 Turning camera off...");
+            room.localParticipant.setCameraEnabled(false);
+            setVideo(user.id || user._id, null);
+        }
+    }
+  }, [cameraEnabled, room, user?.id, user?._id, setVideo]);
 
   useEffect(() => {
     let activeRoom = null;
@@ -36,6 +71,12 @@ export default function LiveKitManager({ workspaceId, muted }) {
             const element = track.attach();
             audioRefs.current[participant.identity] = element;
             document.body.appendChild(element);
+          } else if (track.kind === Track.Kind.Video) {
+            const element = track.attach();
+            element.classList.add('hidden-video');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            setVideo(participant.identity, element);
           }
         });
 
@@ -47,14 +88,30 @@ export default function LiveKitManager({ workspaceId, muted }) {
               element.remove();
               delete audioRefs.current[participant.identity];
             }
+          } else if (track.kind === Track.Kind.Video) {
+            const tracks = track.detach();
+            tracks.forEach(el => el.remove());
+            setVideo(participant.identity, null);
           }
         });
 
         await activeRoom.connect(liveKitUrl, data.token);
         setRoom(activeRoom);
 
-        // Publish local audio
+        // Publish local audio and video
         await activeRoom.localParticipant.setMicrophoneEnabled(!muted);
+        await activeRoom.localParticipant.setCameraEnabled(cameraEnabled);
+        
+        // Store local video
+        if (cameraEnabled) {
+             const track = Array.from(activeRoom.localParticipant.videoTrackPublications.values())[0]?.track;
+             if (track) {
+                 const el = track.attach();
+                 el.style.display = 'none';
+                 document.body.appendChild(el);
+                 setVideo(user.id || user._id, el);
+             }
+        }
       } catch (err) {
         console.warn("LiveKit connection skipped (Server offline?):", err.message);
       }
@@ -67,6 +124,7 @@ export default function LiveKitManager({ workspaceId, muted }) {
         activeRoom.disconnect();
       }
       Object.values(audioRefs.current).forEach(el => el.remove());
+      setVideo(user?.id || user?._id, null);
     };
   }, [workspaceId, token]);
 
