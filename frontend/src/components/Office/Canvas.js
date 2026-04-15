@@ -214,32 +214,22 @@ const OfficeCanvas = React.forwardRef(({ userId, userName, layout }, ref) => {
                         strokeWidth={2}
                     />
                     {/* Live Video Frame */}
-                    {videos[id] && (
-                        <>
-                          {(() => {
-                            if (videos[id].videoWidth === 0) {
-                                console.log(`⏳ Video exists for ${id} but width is 0 - metadata not loaded?`);
-                            }
-                            return null;
-                          })()}
-                          {videos[id].videoWidth > 0 && (
-                            <KonvaImage
-                              image={videos[id]}
-                              x={-24}
-                              y={-24}
-                              width={48}
-                              height={48}
-                              crop={{
-                                x: (videos[id].videoWidth - Math.min(videos[id].videoWidth, videos[id].videoHeight)) / 2,
-                                y: (videos[id].videoHeight - Math.min(videos[id].videoWidth, videos[id].videoHeight)) / 2,
-                                width: Math.min(videos[id].videoWidth, videos[id].videoHeight),
-                                height: Math.min(videos[id].videoWidth, videos[id].videoHeight)
-                              }}
-                            />
-                          )}
-                        </>
-                    )}
-                    {!videos[id] && (
+                    {/* Live Video Frame with Fallback Initials */}
+                    {videos[id] && videos[id].videoWidth > 0 ? (
+                        <KonvaImage
+                          image={videos[id]}
+                          x={-24}
+                          y={-24}
+                          width={48}
+                          height={48}
+                          crop={{
+                            x: (videos[id].videoWidth - Math.min(videos[id].videoWidth, videos[id].videoHeight)) / 2,
+                            y: (videos[id].videoHeight - Math.min(videos[id].videoWidth, videos[id].videoHeight)) / 2,
+                            width: Math.min(videos[id].videoWidth, videos[id].videoHeight),
+                            height: Math.min(videos[id].videoWidth, videos[id].videoHeight)
+                          }}
+                        />
+                    ) : (
                         <Text
                             text={user.name ? user.name.charAt(0).toUpperCase() : "?"}
                             fontSize={18}

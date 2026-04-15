@@ -75,6 +75,7 @@ export default function LiveKitManager({ workspaceId, muted, cameraEnabled, layo
             const element = track.attach();
             element.classList.add('hidden-video');
             element.style.display = 'none';
+            element.play().catch(() => {}); // Force remote video to start
             document.body.appendChild(element);
             setVideo(participant.identity, element);
           }
@@ -158,19 +159,20 @@ export default function LiveKitManager({ workspaceId, muted, cameraEnabled, layo
         const audioPub = participant.getTrackPublication(Track.Source.Microphone);
         const videoPub = participant.getTrackPublication(Track.Source.Camera);
 
+        // ALWAYS subscribe to video if it's available (No proximity for video)
+        if (videoPub && !videoPub.isSubscribed) videoPub.setSubscribed(true);
+
         if (distance < threshold && myRoomId === otherRoomId) {
-            // Subscribe to both audio and video when nearby and in same room
+            // Subscribe to audio only when nearby and in same room
             if (audioPub && !audioPub.isSubscribed) audioPub.setSubscribed(true);
-            if (videoPub && !videoPub.isSubscribed) videoPub.setSubscribed(true);
             
             const element = audioRefs.current[participant.identity];
             if (element) {
                 element.volume = Math.max(0, 1 - (distance / threshold));
             }
         } else {
-            // Unsubscribe when far away OR in different rooms to save bandwidth/privacy
+            // Unsubscribe from audio when far away or in different rooms
             if (audioPub && audioPub.isSubscribed) audioPub.setSubscribed(false);
-            if (videoPub && videoPub.isSubscribed) videoPub.setSubscribed(false);
         }
       });
     }, 500);
